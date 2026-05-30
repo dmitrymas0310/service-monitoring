@@ -1,0 +1,32 @@
+@startuml
+title UC-05. Отправить email-уведомление при сбое
+
+participant "Result & SLA Module" as ResultSLA
+participant "Notification Module" as Notification
+database "Monitoring DB" as DB
+participant "SMTP Server" as SMTP
+
+ResultSLA -> Notification: sendFailureNotification(check_result_id, service_id, endpoint_id)
+
+Notification -> DB: SELECT service, endpoint, check_result
+DB --> Notification: failure details
+
+Notification -> DB: SELECT responsibles by service_id
+DB --> Notification: responsible list
+
+loop for each responsible
+    Notification -> Notification: build email subject and body
+    Notification -> SMTP: send email(to=responsible.email)
+
+    alt email sent
+        SMTP --> Notification: success
+        Notification -> DB: INSERT notification_log(status='SENT')
+    else email sending failed
+        SMTP --> Notification: error
+        Notification -> DB: INSERT notification_log(status='FAILED')
+    end
+end
+
+Notification --> ResultSLA: notification processing completed
+
+@enduml

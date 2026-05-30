@@ -1,0 +1,22 @@
+@startuml
+title UC-04. Сохранить результат проверки
+
+participant "Health Check Module" as HealthCheck
+participant "Result & SLA Module" as ResultSLA
+database "Monitoring DB" as DB
+participant "Notification Module" as Notification
+
+HealthCheck -> ResultSLA: saveCheckResult(checkResult)
+
+ResultSLA -> DB: INSERT check_result
+DB --> ResultSLA: check_result_id
+
+alt checkResult.status = DOWN
+    ResultSLA -> Notification: sendFailureNotification(check_result_id, service_id, endpoint_id)
+else checkResult.status = UP
+    ResultSLA -> ResultSLA: notification is not required
+end
+
+ResultSLA --> HealthCheck: result saved
+
+@enduml

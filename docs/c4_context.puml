@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Context>
+
+title C4 Context Diagram — Monitoring System MVP
+
+Person(support, "Специалист поддержки", "Регистрирует сервисы, endpoint'ы, ответственных и SLA")
+Person(user, "Пользователь / руководитель", "Запрашивает историю проверок, сводную статистику, uptime и SLA")
+
+System(monitoringSystem, "Monitoring System", "Система мониторинга доступности REST endpoint'ов")
+
+System_Ext(targetServices, "Мониторируемые сервисы", "Внешние или внутренние сервисы с REST endpoint'ами")
+System_Ext(testService, "Test Service", "Демонстрационный REST-сервис для проверки сценариев UP / DOWN / TIMEOUT")
+System_Ext(smtpServer, "SMTP Server", "Внешний почтовый сервер для отправки email-уведомлений")
+
+Rel(support, monitoringSystem, "Настраивает мониторинг сервисов", "REST API")
+Rel(user, monitoringSystem, "Получает статистику доступности и SLA", "REST API")
+
+Rel(monitoringSystem, targetServices, "Периодически проверяет endpoint'ы", "HTTP GET")
+Rel(monitoringSystem, testService, "Проверяет тестовые endpoint'ы", "HTTP GET")
+Rel(monitoringSystem, smtpServer, "Отправляет email-уведомления ответственным", "SMTP")
+
+@enduml

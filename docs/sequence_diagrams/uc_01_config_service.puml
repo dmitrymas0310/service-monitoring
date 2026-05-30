@@ -1,0 +1,29 @@
+@startuml
+title UC-01. Настроить мониторинг сервиса
+
+actor "Специалист поддержки" as Support
+participant "Monitoring API" as API
+participant "Monitoring Config Module" as Config
+database "Monitoring DB" as DB
+
+Support -> API: POST /api/v1/services
+API -> Config: createService(request)
+
+Config -> Config: validate service data
+Config -> Config: validate responsibles
+
+Config -> DB: INSERT service
+DB --> Config: service_id
+
+loop for each responsible
+    Config -> DB: INSERT responsible
+    DB --> Config: responsible_id
+
+    Config -> DB: INSERT service_responsible
+    DB --> Config: relation saved
+end
+
+Config --> API: created service with responsibles
+API --> Support: 201 Created + service_id
+
+@enduml

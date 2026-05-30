@@ -1,0 +1,27 @@
+@startuml
+title UC-07. Посмотреть SLA и uptime
+
+actor "Пользователь / руководитель" as User
+participant "Monitoring API" as API
+participant "Result & SLA Module" as ResultSLA
+database "Monitoring DB" as DB
+
+User -> API: GET /api/v1/services/{serviceId}/stats?period=month
+API -> ResultSLA: calculateMonthlyStats(serviceId)
+
+ResultSLA -> DB: SELECT service WHERE id = serviceId
+DB --> ResultSLA: service with sla_target_percent
+
+ResultSLA -> DB: SELECT check_result\nWHERE service_id = serviceId\nAND checked_at in current month
+DB --> ResultSLA: monthly check results
+
+ResultSLA -> ResultSLA: total_checks = count(*)
+ResultSLA -> ResultSLA: up_checks = count(status = 'UP')
+ResultSLA -> ResultSLA: down_checks = count(status = 'DOWN')
+ResultSLA -> ResultSLA: uptime_percent = up_checks / total_checks * 100
+ResultSLA -> ResultSLA: sla_breached = uptime_percent < sla_target_percent
+
+ResultSLA --> API: monthly SLA stats
+API --> User: 200 OK + uptime/SLA
+
+@enduml

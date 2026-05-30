@@ -1,0 +1,47 @@
+@startuml
+!include <C4/C4_Component>
+
+title C4 Component Diagram — Monitoring Service MVP
+
+Person(support, "Специалист поддержки", "Регистрирует сервисы, endpoint'ы, ответственных и SLA")
+Person(user, "Пользователь / руководитель", "Запрашивает историю проверок, сводную статистику, uptime и SLA")
+
+System_Ext(targetServices, "Мониторируемые сервисы", "Сервисы с REST endpoint'ами, доступность которых проверяется")
+System_Ext(testService, "Test Service", "Демонстрационный REST-сервис с endpoint'ами для проверки сценариев UP / DOWN / TIMEOUT")
+System_Ext(smtpServer, "SMTP Server", "Внешний почтовый сервер для отправки email-уведомлений")
+
+ContainerDb(monitoringDb, "Monitoring DB", "PostgreSQL", "Хранит сервисы, endpoint'ы, ответственных, SLA, результаты проверок и журнал уведомлений")
+
+Container_Boundary(monitoringService, "Monitoring Service") {
+
+    Component(api, "Monitoring API", "REST API", "Принимает запросы на настройку мониторинга и получение статистики")
+
+    Component(configModule, "Monitoring Config Module", "Application Module", "Управляет сервисами, endpoint'ами, SLA и ответственными сотрудниками")
+
+    Component(healthCheckModule, "Health Check Module", "Background Module", "Раз в 10 секунд проверяет активные endpoint'ы и определяет статус UP / DOWN")
+
+    Component(resultSlaModule, "Result & SLA Module", "Application Module", "Сохраняет результаты проверок, предоставляет историю и рассчитывает uptime/SLA")
+
+    Component(notificationModule, "Notification Module", "Application Module", "Отправляет email-уведомления ответственным сотрудникам при сбое")
+}
+
+Rel(support, api, "Создаёт сервисы, endpoint'ы и ответственных", "REST API")
+Rel(user, api, "Запрашивает историю, статистику, uptime и SLA", "REST API")
+
+Rel(api, configModule, "Передаёт команды настройки мониторинга")
+Rel(api, resultSlaModule, "Передаёт запросы на историю и статистику")
+
+Rel(configModule, monitoringDb, "Сохраняет и читает конфигурацию", "SQL")
+
+Rel(healthCheckModule, monitoringDb, "Получает активные endpoint'ы и сохраняет результаты", "SQL")
+Rel(healthCheckModule, targetServices, "Проверяет зарегистрированные endpoint'ы", "HTTP GET")
+Rel(healthCheckModule, testService, "Проверяет тестовые endpoint'ы", "HTTP GET")
+Rel(healthCheckModule, resultSlaModule, "Передаёт результат проверки")
+
+Rel(resultSlaModule, monitoringDb, "Читает и пишет результаты проверок, рассчитывает SLA", "SQL")
+Rel(resultSlaModule, notificationModule, "Инициирует уведомление при status = DOWN")
+
+Rel(notificationModule, monitoringDb, "Получает ответственных и сохраняет журнал уведомлений", "SQL")
+Rel(notificationModule, smtpServer, "Отправляет email-уведомление", "SMTP")
+
+@enduml

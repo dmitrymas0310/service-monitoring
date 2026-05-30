@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+
+title Use Case Diagram — Monitoring System MVP
+
+actor "Специалист поддержки" as Support
+actor "Пользователь / руководитель" as User
+actor "Система\nпо расписанию" as Scheduler
+actor "SMTP Server" as SMTP
+actor "Test Service" as TestService
+
+rectangle "Monitoring System" {
+
+  usecase "UC-01\nНастроить мониторинг\nсервиса" as UC01
+  usecase "UC-02\nЗарегистрировать\nendpoint сервиса" as UC02
+
+  usecase "UC-03\nВыполнить\nпериодическую проверку" as UC03
+  usecase "UC-04\nСохранить результат\nпроверки" as UC04
+
+  usecase "UC-05\nОтправить email-\nуведомление при сбое" as UC05
+
+  usecase "UC-06\nПосмотреть историю\nпроверок" as UC06
+  usecase "UC-07\nПосмотреть SLA\nи uptime" as UC07
+  usecase "UC-08\nПосмотреть сводку\nпо сервисам" as UC08
+
+  usecase "UC-09\nПроверить работу\nчерез Test Service" as UC09
+}
+
+Support --> UC01
+Support --> UC02
+Support --> UC09
+
+User --> UC06
+User --> UC07
+User --> UC08
+
+Scheduler --> UC03
+
+UC03 ..> UC04 : <<include>>
+UC04 ..> UC05 : <<extend>>\nесли DOWN
+
+UC05 --> SMTP
+
+UC09 ..> UC01 : <<include>>
+UC09 ..> UC02 : <<include>>
+UC03 --> TestService
+
+@enduml

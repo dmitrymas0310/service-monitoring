@@ -1,0 +1,31 @@
+@startuml
+title UC-08. Посмотреть сводку по сервисам
+
+actor "Пользователь / руководитель" as User
+participant "Monitoring API" as API
+participant "Result & SLA Module" as ResultSLA
+database "Monitoring DB" as DB
+
+User -> API: GET /api/v1/services/summary
+API -> ResultSLA: getServicesSummary()
+
+ResultSLA -> DB: SELECT active services
+DB --> ResultSLA: service list
+
+loop for each service
+    ResultSLA -> DB: SELECT latest check_result\nWHERE service_id = service.id
+    DB --> ResultSLA: last check result
+
+    ResultSLA -> DB: SELECT check_result for current month\nWHERE service_id = service.id
+    DB --> ResultSLA: monthly check results
+
+    ResultSLA -> ResultSLA: calculate current_status
+    ResultSLA -> ResultSLA: calculate uptime_percent
+    ResultSLA -> ResultSLA: calculate sla_breached
+    ResultSLA -> ResultSLA: add service to summary
+end
+
+ResultSLA --> API: services summary
+API --> User: 200 OK + summary list
+
+@enduml

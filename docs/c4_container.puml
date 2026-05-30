@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Container>
+
+title C4 Container Diagram — Monitoring System MVP
+
+Person(support, "Специалист поддержки", "Регистрирует сервисы, endpoint'ы, ответственных и SLA")
+Person(user, "Пользователь / руководитель", "Запрашивает историю проверок, сводную статистику, uptime и SLA")
+
+System_Ext(targetServices, "Мониторируемые сервисы", "Сервисы с REST endpoint'ами, доступность которых проверяется")
+System_Ext(testService, "Test Service", "Демонстрационный REST-сервис с endpoint'ами для проверки сценариев UP / DOWN / TIMEOUT")
+System_Ext(smtpServer, "SMTP Server", "Внешний почтовый сервер для отправки email-уведомлений")
+
+System_Boundary(monitoringSystem, "Monitoring System") {
+
+    Container(monitoringService, "Monitoring Service", "Backend REST API", "Основной сервис мониторинга. Управляет конфигурацией, выполняет проверки endpoint'ов, сохраняет результаты, рассчитывает uptime/SLA и отправляет уведомления")
+
+    ContainerDb(monitoringDb, "Monitoring DB", "PostgreSQL", "Хранит сервисы, endpoint'ы, ответственных, SLA, сырые результаты проверок и журнал уведомлений")
+}
+
+Rel(support, monitoringService, "Создаёт сервисы, endpoint'ы и ответственных", "REST API")
+Rel(user, monitoringService, "Запрашивает историю, статистику, uptime и SLA", "REST API")
+
+Rel(monitoringService, monitoringDb, "Читает и записывает данные", "SQL")
+
+Rel(monitoringService, targetServices, "Периодически проверяет зарегистрированные endpoint'ы", "HTTP GET")
+Rel(monitoringService, testService, "Проверяет тестовые endpoint'ы, зарегистрированные как обычные endpoint'ы", "HTTP GET")
+
+Rel(monitoringService, smtpServer, "Отправляет email-уведомления ответственным при сбое", "SMTP")
+
+@enduml

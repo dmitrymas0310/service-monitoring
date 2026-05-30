@@ -1,0 +1,38 @@
+@startuml
+title UC-03. Выполнить периодическую проверку
+
+actor "Система по расписанию" as Scheduler
+participant "Health Check Module" as HealthCheck
+database "Monitoring DB" as DB
+participant "Мониторируемый сервис" as TargetService
+participant "Result & SLA Module" as ResultSLA
+
+Scheduler -> HealthCheck: runScheduledChecks()
+
+HealthCheck -> DB: SELECT active endpoints
+DB --> HealthCheck: endpoint list
+
+loop for each endpoint
+    HealthCheck -> TargetService: GET endpoint.url
+
+    alt HTTP 200
+        TargetService --> HealthCheck: 200 OK
+        HealthCheck -> HealthCheck: status = UP
+        HealthCheck -> HealthCheck: error_type = null
+    else HTTP 5xx
+        TargetService --> HealthCheck: 500 / 502 / 503
+        HealthCheck -> HealthCheck: status = DOWN
+        HealthCheck -> HealthCheck: error_type = HTTP_5XX
+    else timeout
+        HealthCheck -> HealthCheck: status = DOWN
+        HealthCheck -> HealthCheck: error_type = TIMEOUT
+    else connection error
+        HealthCheck -> HealthCheck: status = DOWN
+        HealthCheck -> HealthCheck: error_type = CONNECTION_ERROR
+    end
+
+    HealthCheck -> HealthCheck: calculate latency_ms
+    HealthCheck -> ResultSLA: saveCheckResult(checkResult)
+end
+
+@enduml

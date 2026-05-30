@@ -1,0 +1,72 @@
+@startuml
+title UC-09. Проверить работу через Test Service
+
+actor "Специалист поддержки" as Support
+participant "Monitoring API" as API
+participant "Monitoring Config Module" as Config
+database "Monitoring DB" as DB
+participant "Health Check Module" as HealthCheck
+participant "Test Service" as TestService
+participant "Result & SLA Module" as ResultSLA
+participant "Notification Module" as Notification
+participant "SMTP Server" as SMTP
+
+Support -> API: POST /api/v1/services\n(test-service with responsibles)
+API -> Config: createService(request)
+Config -> DB: INSERT service, responsible, service_responsible
+DB --> Config: service_id
+Config --> API: created service
+API --> Support: 201 Created
+
+Support -> API: POST /api/v1/services/{serviceId}/endpoints\n/health/up
+API -> Config: addEndpoint(serviceId, /health/up)
+Config -> DB: INSERT endpoint
+DB --> Config: endpoint_id
+Config --> API: created endpoint
+API --> Support: 201 Created
+
+Support -> API: POST /api/v1/services/{serviceId}/endpoints\n/health/down
+API -> Config: addEndpoint(serviceId, /health/down)
+Config -> DB: INSERT endpoint
+DB --> Config: endpoint_id
+Config --> API: created endpoint
+API --> Support: 201 Created
+
+Support -> API: POST /api/v1/services/{serviceId}/endpoints\n/health/timeout
+API -> Config: addEndpoint(serviceId, /health/timeout)
+Config -> DB: INSERT endpoint
+DB --> Config: endpoint_id
+Config --> API: created endpoint
+API --> Support: 201 Created
+
+loop every 10 seconds
+    HealthCheck -> DB: SELECT active endpoints for test-service
+    DB --> HealthCheck: /health/up, /health/down, /health/timeout
+
+    HealthCheck -> TestService: GET /health/up
+    TestService --> HealthCheck: 200 OK
+    HealthCheck -> ResultSLA: saveCheckResult(status=UP)
+    ResultSLA -> DB: INSERT check_result(status=UP)
+
+    HealthCheck -> TestService: GET /health/down
+    TestService --> HealthCheck: 500
+    HealthCheck -> ResultSLA: saveCheckResult(status=DOWN, error_type=HTTP_5XX)
+    ResultSLA -> DB: INSERT check_result(status=DOWN)
+    ResultSLA -> Notification: sendFailureNotification()
+
+    Notification -> DB: SELECT responsibles by service_id
+    DB --> Notification: responsible emails
+    Notification -> SMTP: send email alert
+
+    HealthCheck -> TestService: GET /health/timeout
+    HealthCheck -> HealthCheck: timeout
+    HealthCheck -> ResultSLA: saveCheckResult(status=DOWN, error_type=TIMEOUT)
+    ResultSLA -> DB: INSERT check_result(status=DOWN)
+    ResultSLA -> Notification: sendFailureNotification()
+
+    Notification -> DB: SELECT responsibles by service_id
+    DB --> Notification: responsible emails
+    Notification -> SMTP: send email alert
+end
+
+@enduml

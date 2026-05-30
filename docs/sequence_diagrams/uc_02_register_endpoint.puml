@@ -1,0 +1,24 @@
+@startuml
+title UC-02. Зарегистрировать endpoint сервиса
+
+actor "Специалист поддержки" as Support
+participant "Monitoring API" as API
+participant "Monitoring Config Module" as Config
+database "Monitoring DB" as DB
+
+Support -> API: POST /api/v1/services/{serviceId}/endpoints
+API -> Config: addEndpoint(serviceId, request)
+
+Config -> DB: SELECT service WHERE id = serviceId
+DB --> Config: service found
+
+Config -> Config: validate endpoint url
+Config -> Config: validate method, timeout, interval
+
+Config -> DB: INSERT endpoint
+DB --> Config: endpoint_id
+
+Config --> API: created endpoint
+API --> Support: 201 Created + endpoint_id
+
+@enduml

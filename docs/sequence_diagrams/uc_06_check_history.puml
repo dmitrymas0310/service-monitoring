@@ -1,0 +1,19 @@
+@startuml
+title UC-06. Посмотреть историю проверок
+
+actor "Пользователь / руководитель" as User
+participant "Monitoring API" as API
+participant "Result & SLA Module" as ResultSLA
+database "Monitoring DB" as DB
+
+User -> API: GET /api/v1/services/{serviceId}/checks?dateFrom&dateTo
+API -> ResultSLA: getCheckHistory(serviceId, filters)
+
+ResultSLA -> DB: SELECT check_result\nWHERE service_id = serviceId\nAND checked_at BETWEEN dateFrom AND dateTo
+DB --> ResultSLA: check_result list
+
+ResultSLA -> ResultSLA: map to response DTO
+ResultSLA --> API: check history
+API --> User: 200 OK + check results
+
+@enduml

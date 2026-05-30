@@ -1,0 +1,82 @@
+@startuml
+title ER Diagram — Monitoring System MVP
+
+entity "service" as service {
+  * id : uuid <<PK>>
+  --
+  name : varchar(255)
+  description : text
+  sla_target_percent : numeric(5,2)
+  is_active : boolean
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "endpoint" as endpoint {
+  * id : uuid <<PK>>
+  --
+  service_id : uuid <<FK>>
+  name : varchar(255)
+  url : text
+  method : varchar(10)
+  timeout_ms : int
+  check_interval_sec : int
+  is_active : boolean
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "responsible" as responsible {
+  * id : uuid <<PK>>
+  --
+  full_name : varchar(255)
+  email : varchar(255)
+  created_at : timestamptz
+}
+
+entity "service_responsible" as service_responsible {
+  * service_id : uuid <<PK, FK>>
+  * responsible_id : uuid <<PK, FK>>
+  --
+  created_at : timestamptz
+}
+
+entity "check_result" as check_result {
+  * id : uuid <<PK>>
+  --
+  service_id : uuid <<FK>>
+  endpoint_id : uuid <<FK>>
+  checked_at : timestamptz
+  status : varchar(20)
+  http_status_code : int
+  latency_ms : int
+  error_type : varchar(100)
+  error_message : text
+  created_at : timestamptz
+}
+
+entity "notification_log" as notification_log {
+  * id : uuid <<PK>>
+  --
+  service_id : uuid <<FK>>
+  endpoint_id : uuid <<FK>>
+  check_result_id : uuid <<FK>>
+  responsible_id : uuid <<FK>>
+  channel : varchar(50)
+  status : varchar(50)
+  sent_at : timestamptz
+}
+
+service ||--o{ endpoint : "has"
+service ||--o{ check_result : "has checks"
+endpoint ||--o{ check_result : "produces checks"
+
+service ||--o{ service_responsible : "has responsibles"
+responsible ||--o{ service_responsible : "assigned to services"
+
+service ||--o{ notification_log : "has notifications"
+endpoint ||--o{ notification_log : "related to"
+check_result ||--o{ notification_log : "triggers"
+responsible ||--o{ notification_log : "receives"
+
+@enduml
