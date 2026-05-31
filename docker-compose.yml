@@ -1,0 +1,48 @@
+services:
+  monitoring-db:
+    image: postgres:16-alpine
+    container_name: monitoring-db
+    environment:
+      POSTGRES_DB: monitoring_db
+      POSTGRES_USER: monitoring_user
+      POSTGRES_PASSWORD: monitoring_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - monitoring-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitoring_user -d monitoring_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  monitoring-service:
+    build:
+      context: .
+    container_name: monitoring-service
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      monitoring-db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  test-service:
+    build:
+      context: ./test_service
+    container_name: test-service
+    ports:
+      - "8081:8081"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  monitoring-db-data:
