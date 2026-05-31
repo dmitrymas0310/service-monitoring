@@ -112,3 +112,9 @@ http://localhost:8000/api/v1/services/summary
 
 http://localhost:8025
 
+## Тестирование
+
+Проведено ручное тестирование API на Docker Compose стенде с PostgreSQL, Test Service и Mailpit.
+
+Отчёт с тестовыми сценариями, фактическими результатами и найденными расхождениями:
+[docs/manual_testing_report.md](docs/manual_testing_report.md)
