@@ -44,5 +44,20 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  tests:
+    build:
+      context: ./tests
+      dockerfile: ./tests
+    container_name: monitoring-tests
+    network_mode: host
+    environment:
+      DATABASE_URL: postgresql://monitoring_user:monitoring_pass@localhost:5433/monitoring_db
+    depends_on:
+      - monitoring-db
+    profiles:
+      - test
+    ports:
+      - "8085:8085"
+
 volumes:
   monitoring-db-data:
