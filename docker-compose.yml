@@ -46,12 +46,11 @@ services:
 
   tests:
     build:
-      context: ./tests
-      dockerfile: ./tests
+      context: .
+      dockerfile: tests/Dockerfile
     container_name: monitoring-tests
-    network_mode: host
     environment:
-      DATABASE_URL: postgresql://monitoring_user:monitoring_pass@localhost:5433/monitoring_db
+      DATABASE_URL: postgresql://monitoring_user:monitoring_pass@monitoring-db:5432/monitoring_db
     depends_on:
       - monitoring-db
     profiles:

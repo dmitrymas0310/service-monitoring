@@ -51,6 +51,7 @@ def setup_database():
     yield
     Base.metadata.drop_all(bind=_engine)
     if not _USE_POSTGRES:
+        _engine.dispose()
         db_file = Path(__file__).parent / "test_monitoring.db"
         if db_file.exists():
             db_file.unlink()
